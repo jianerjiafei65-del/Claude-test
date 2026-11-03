@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hinata Kitchen | ひなたのカフェごはん</title>
+  <meta name="description" content="Hinata Kitchen のカフェメニュー。材料・調味料・分量・栄養成分・調理時間を、料理ごとに詳しくご紹介します。">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">本文へスキップ</a>
+
+  <!-- ===== ヘッダー ===== -->
+  <header class="header" id="header">
+    <div class="container header__inner">
+      <a href="#top" class="logo">
+        <span class="logo__icon" aria-hidden="true">🌼</span>
+        <span class="logo__text">Hinata Kitchen</span>
+      </a>
+      <nav class="nav" aria-label="ページ内リンク">
+        <a href="#menu" class="nav__link">Menu</a>
+        <a href="#about" class="nav__link">About</a>
+        <a href="#shop" class="nav__link">Shop</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <!-- ===== ヒーロー ===== -->
+    <section class="hero" id="top">
+      <div class="container hero__inner">
+        <div class="hero__text">
+          <p class="hero__en">Cafe &amp; Kitchen</p>
+          <h1 class="hero__title">からだにやさしい、<br><span>ひなたのごはん。</span></h1>
+          <p class="hero__lead">季節の野菜をたっぷり使ったカフェごはん。<br>材料・調味料・分量・栄養・調理時間まで、すべて公開しています。</p>
+          <a href="#menu" class="btn">メニューとレシピを見る</a>
+        </div>
+        <div class="hero__visual" aria-hidden="true">
+          <div class="plate">
+            <span class="plate__food">🥗</span>
+            <span class="plate__chip plate__chip--1">🥕</span>
+            <span class="plate__chip plate__chip--2">🍅</span>
+            <span class="plate__chip plate__chip--3">🌿</span>
+          </div>
+        </div>
+      </div>
+      <ul class="container hero__stats">
+        <li><strong id="statCount">0</strong><span>メニュー</span></li>
+        <li><strong>100%</strong><span>レシピ公開</span></li>
+        <li><strong>国産</strong><span>野菜を使用</span></li>
+      </ul>
+    </section>
+
+    <!-- ===== メニュー ===== -->
+    <section class="section menu" id="menu">
+      <div class="container">
+        <div class="section__head">
+          <p class="section__en">Menu &amp; Recipe</p>
+          <h2 class="section__title">メニューとレシピ</h2>
+          <p class="section__desc">カードを押すと、材料・調味料・分量・栄養成分・作り方を確認できます。</p>
+        </div>
+
+        <!-- 絞り込み -->
+        <div class="filters">
+          <div class="filters__cats" role="group" aria-label="カテゴリ">
+            <button type="button" class="chip is-active" data-cat="all" aria-pressed="true">すべて</button>
+            <button type="button" class="chip" data-cat="main" aria-pressed="false">🍛 ごはん</button>
+            <button type="button" class="chip" data-cat="side" aria-pressed="false">🥗 サラダ・スープ</button>
+            <button type="button" class="chip" data-cat="sweets" aria-pressed="false">🍰 スイーツ</button>
+            <button type="button" class="chip" data-cat="drink" aria-pressed="false">☕ ドリンク</button>
+          </div>
+          <div class="filters__opts" role="group" aria-label="条件で絞り込み">
+            <button type="button" class="chip chip--opt" data-opt="quick" aria-pressed="false">⏱ 15分以内</button>
+            <button type="button" class="chip chip--opt" data-opt="light" aria-pressed="false">🔥 400kcal以下</button>
+            <button type="button" class="chip chip--opt" data-opt="veg" aria-pressed="false">🌱 ベジタリアン</button>
+          </div>
+          <div class="filters__bar">
+            <p class="filters__count" aria-live="polite"><span id="resultCount">0</span> 件のメニュー</p>
+            <label class="sort">
+              <span class="visually-hidden">並び替え</span>
+              <select id="sortSelect">
+                <option value="default">おすすめ順</option>
+                <option value="time">調理時間が短い順</option>
+                <option value="kcal">カロリーが低い順</option>
+                <option value="price">価格が安い順</option>
+              </select>
+            </label>
+          </div>
+        </div>
+
+        <!-- カード一覧（js/main.js から生成） -->
+        <div class="cards" id="cards"></div>
+        <p class="empty" id="emptyMsg" hidden>条件に合うメニューがありません。絞り込みを変えてみてください。</p>
+      </div>
+    </section>
+
+    <!-- ===== コンセプト ===== -->
+    <section class="section about" id="about">
+      <div class="container about__grid">
+        <div class="about__item">
+          <span class="about__icon" aria-hidden="true">🥬</span>
+          <h3>素材がわかる</h3>
+          <p>すべてのメニューで、使っている材料と調味料を、分量まで公開しています。</p>
+        </div>
+        <div class="about__item">
+          <span class="about__icon" aria-hidden="true">📊</span>
+          <h3>栄養がわかる</h3>
+          <p>エネルギーや塩分など6項目を、1日の目安量と比べて確認できます。</p>
+        </div>
+        <div class="about__item">
+          <span class="about__icon" aria-hidden="true">🏠</span>
+          <h3>おうちでも作れる</h3>
+          <p>人数に合わせて分量を自動で計算。調理時間の目安も載せています。</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===== 店舗情報 ===== -->
+    <section class="section shop" id="shop">
+      <div class="container">
+        <div class="section__head">
+          <p class="section__en">Shop</p>
+          <h2 class="section__title">店舗情報</h2>
+        </div>
+        <div class="shop__card">
+          <dl class="shop__list">
+            <div><dt>住所</dt><dd>東京都世田谷区ひなた町4-5-6</dd></div>
+            <div><dt>営業時間</dt><dd>10:00〜18:00（L.O. 17:30）</dd></div>
+            <div><dt>定休日</dt><dd>月曜日・第3火曜日</dd></div>
+            <div><dt>電話</dt><dd><a href="tel:0300001111">03-0000-1111</a></dd></div>
+          </dl>
+          <a href="tel:0300001111" class="btn btn--sub">📞 電話でのご予約</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <p class="footer__logo">🌼 Hinata Kitchen</p>
+    <p class="footer__note">※ 栄養成分は一般的な食品成分表をもとにした目安です。</p>
+    <p class="footer__copy">&copy; <span id="year">2026</span> Hinata Kitchen</p>
+  </footer>
+
+  <!-- ===== レシピ詳細モーダル ===== -->
+  <div class="modal" id="recipeModal" aria-hidden="true">
+    <div class="modal__overlay" data-close></div>
+    <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="rTitle">
+      <button type="button" class="modal__close" aria-label="閉じる" data-close>&times;</button>
+      <div class="modal__scroll">
+        <div class="r-hero" id="rHero">
+          <span class="r-hero__icon" id="rIcon" aria-hidden="true"></span>
+        </div>
+        <div class="r-body">
+          <p class="r-cat" id="rCat"></p>
+          <h2 class="r-title" id="rTitle"></h2>
+          <p class="r-desc" id="rDesc"></p>
+
+          <ul class="r-meta">
+            <li><span>価格</span><strong id="rPrice"></strong></li>
+            <li><span>調理時間</span><strong id="rTime"></strong></li>
+            <li><span>エネルギー</span><strong id="rKcal"></strong></li>
+          </ul>
+
+          <div class="r-time" id="rTimeBar" aria-label="調理時間の内訳"></div>
+
+          <div class="r-allergy" id="rAllergy"></div>
+
+          <!-- 分量 -->
+          <section class="r-section">
+            <div class="r-section__head">
+              <h3>材料と分量</h3>
+              <div class="servings" role="group" aria-label="人数">
+                <button type="button" class="servings__btn" id="servMinus" aria-label="1人減らす">−</button>
+                <output class="servings__num" id="servNum" aria-live="polite">1人分</output>
+                <button type="button" class="servings__btn" id="servPlus" aria-label="1人増やす">＋</button>
+              </div>
+            </div>
+            <table class="r-table">
+              <caption class="visually-hidden">材料</caption>
+              <tbody id="rIngredients"></tbody>
+            </table>
+            <h4 class="r-subhead">調味料</h4>
+            <table class="r-table r-table--season">
+              <caption class="visually-hidden">調味料</caption>
+              <tbody id="rSeasonings"></tbody>
+            </table>
+          </section>
+
+          <!-- 栄養 -->
+          <section class="r-section">
+            <div class="r-section__head">
+              <h3>栄養成分 <small>（1人分あたり）</small></h3>
+            </div>
+            <ul class="nutri" id="rNutrition"></ul>
+            <p class="r-note">バーは成人の1日の目安量に対する割合です。数値は目安です。</p>
+          </section>
+
+          <!-- 作り方 -->
+          <section class="r-section">
+            <div class="r-section__head"><h3>作り方</h3></div>
+            <ol class="steps" id="rSteps"></ol>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
