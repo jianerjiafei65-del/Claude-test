@@ -2,9 +2,10 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Hinata Kitchen | ひなたのカフェごはん</title>
-  <meta name="description" content="Hinata Kitchen のカフェメニュー。材料・調味料・分量・栄養成分・調理時間を、料理ごとに詳しくご紹介します。">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#fffaf2">
+  <title>ひなたレシピ帳</title>
+  <meta name="description" content="自分のレシピと献立を管理するノート。材料・調味料・分量・栄養・調理時間・写真を記録できます。">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
@@ -14,200 +15,352 @@
   <a class="skip-link" href="#main">本文へスキップ</a>
 
   <!-- ===== ヘッダー ===== -->
-  <header class="header" id="header">
+  <header class="header">
     <div class="container header__inner">
-      <a href="#top" class="logo">
+      <a href="#recipes" class="logo">
         <span class="logo__icon" aria-hidden="true">🌼</span>
-        <span class="logo__text">Hinata Kitchen</span>
+        <span>ひなたレシピ帳</span>
       </a>
-      <nav class="nav" aria-label="ページ内リンク">
-        <a href="#menu" class="nav__link">Menu</a>
-        <a href="#about" class="nav__link">About</a>
-        <a href="#shop" class="nav__link">Shop</a>
+      <nav class="topnav" aria-label="メイン">
+        <a href="#recipes" class="topnav__link" data-nav="recipes">レシピ</a>
+        <a href="#plan" class="topnav__link" data-nav="plan">献立</a>
+        <a href="#settings" class="topnav__link" data-nav="settings">設定</a>
       </nav>
     </div>
   </header>
 
-  <main id="main">
-    <!-- ===== ヒーロー ===== -->
-    <section class="hero" id="top">
-      <div class="container hero__inner">
-        <div class="hero__text">
-          <p class="hero__en">Cafe &amp; Kitchen</p>
-          <h1 class="hero__title">からだにやさしい、<br><span>ひなたのごはん。</span></h1>
-          <p class="hero__lead">季節の野菜をたっぷり使ったカフェごはん。<br>材料・調味料・分量・栄養・調理時間まで、すべて公開しています。</p>
-          <a href="#menu" class="btn">メニューとレシピを見る</a>
-        </div>
-        <div class="hero__visual" aria-hidden="true">
-          <div class="plate">
-            <span class="plate__food">🥗</span>
-            <span class="plate__chip plate__chip--1">🥕</span>
-            <span class="plate__chip plate__chip--2">🍅</span>
-            <span class="plate__chip plate__chip--3">🌿</span>
-          </div>
-        </div>
+  <main id="main" class="container">
+    <!-- ================= レシピ ================= -->
+    <section class="view" id="view-recipes" aria-labelledby="h-recipes">
+      <div class="view__head">
+        <h1 class="view__title" id="h-recipes">レシピ</h1>
+        <button type="button" class="btn btn--small" id="addRecipeBtn">＋ 新しいレシピ</button>
       </div>
-      <ul class="container hero__stats">
-        <li><strong id="statCount">0</strong><span>メニュー</span></li>
-        <li><strong>100%</strong><span>レシピ公開</span></li>
-        <li><strong>国産</strong><span>野菜を使用</span></li>
-      </ul>
-    </section>
 
-    <!-- ===== メニュー ===== -->
-    <section class="section menu" id="menu">
-      <div class="container">
-        <div class="section__head">
-          <p class="section__en">Menu &amp; Recipe</p>
-          <h2 class="section__title">メニューとレシピ</h2>
-          <p class="section__desc">カードを押すと、材料・調味料・分量・栄養成分・作り方を確認できます。</p>
-        </div>
+      <div class="search">
+        <span class="search__icon" aria-hidden="true">🔍</span>
+        <input type="search" id="searchInput" placeholder="料理名・材料で検索" aria-label="レシピを検索" autocomplete="off">
+      </div>
 
-        <!-- 絞り込み -->
-        <div class="filters">
-          <div class="filters__cats" role="group" aria-label="カテゴリ">
-            <button type="button" class="chip is-active" data-cat="all" aria-pressed="true">すべて</button>
-            <button type="button" class="chip" data-cat="main" aria-pressed="false">🍛 ごはん</button>
-            <button type="button" class="chip" data-cat="side" aria-pressed="false">🥗 サラダ・スープ</button>
-            <button type="button" class="chip" data-cat="sweets" aria-pressed="false">🍰 スイーツ</button>
-            <button type="button" class="chip" data-cat="drink" aria-pressed="false">☕ ドリンク</button>
-          </div>
-          <div class="filters__opts" role="group" aria-label="条件で絞り込み">
-            <button type="button" class="chip chip--opt" data-opt="quick" aria-pressed="false">⏱ 15分以内</button>
-            <button type="button" class="chip chip--opt" data-opt="light" aria-pressed="false">🔥 400kcal以下</button>
-            <button type="button" class="chip chip--opt" data-opt="veg" aria-pressed="false">🌱 ベジタリアン</button>
-          </div>
-          <div class="filters__bar">
-            <p class="filters__count" aria-live="polite"><span id="resultCount">0</span> 件のメニュー</p>
-            <label class="sort">
-              <span class="visually-hidden">並び替え</span>
-              <select id="sortSelect">
-                <option value="default">おすすめ順</option>
-                <option value="time">調理時間が短い順</option>
-                <option value="kcal">カロリーが低い順</option>
-                <option value="price">価格が安い順</option>
-              </select>
-            </label>
-          </div>
-        </div>
+      <div class="chips" role="group" aria-label="カテゴリ">
+        <button type="button" class="chip is-active" data-cat="all" aria-pressed="true">すべて</button>
+        <button type="button" class="chip" data-cat="main" aria-pressed="false">ごはん</button>
+        <button type="button" class="chip" data-cat="side" aria-pressed="false">サラダ・スープ</button>
+        <button type="button" class="chip" data-cat="sweets" aria-pressed="false">スイーツ</button>
+        <button type="button" class="chip" data-cat="drink" aria-pressed="false">ドリンク</button>
+        <button type="button" class="chip" data-cat="other" aria-pressed="false">その他</button>
+      </div>
+      <div class="chips" role="group" aria-label="条件">
+        <button type="button" class="chip chip--opt" data-opt="fav" aria-pressed="false">★ お気に入り</button>
+        <button type="button" class="chip chip--opt" data-opt="quick" aria-pressed="false">⏱ 15分以内</button>
+        <button type="button" class="chip chip--opt" data-opt="light" aria-pressed="false">🔥 400kcal以下</button>
+        <button type="button" class="chip chip--opt" data-opt="veg" aria-pressed="false">🌱 ベジ</button>
+      </div>
 
-        <!-- カード一覧（js/main.js から生成） -->
-        <div class="cards" id="cards"></div>
-        <p class="empty" id="emptyMsg" hidden>条件に合うメニューがありません。絞り込みを変えてみてください。</p>
+      <div class="listbar">
+        <p class="listbar__count" aria-live="polite"><b id="resultCount">0</b> 件</p>
+        <label class="select">
+          <span class="visually-hidden">並び替え</span>
+          <select id="sortSelect">
+            <option value="updated">更新が新しい順</option>
+            <option value="name">名前順</option>
+            <option value="time">調理時間が短い順</option>
+            <option value="kcal">カロリーが低い順</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="cards" id="cards"></div>
+      <div class="empty" id="emptyRecipes" hidden>
+        <p class="empty__icon" aria-hidden="true">📒</p>
+        <p id="emptyText">まだレシピがありません。</p>
+        <button type="button" class="btn btn--small" data-action="add-recipe">＋ 最初のレシピを登録</button>
       </div>
     </section>
 
-    <!-- ===== コンセプト ===== -->
-    <section class="section about" id="about">
-      <div class="container about__grid">
-        <div class="about__item">
-          <span class="about__icon" aria-hidden="true">🥬</span>
-          <h3>素材がわかる</h3>
-          <p>すべてのメニューで、使っている材料と調味料を、分量まで公開しています。</p>
-        </div>
-        <div class="about__item">
-          <span class="about__icon" aria-hidden="true">📊</span>
-          <h3>栄養がわかる</h3>
-          <p>エネルギーや塩分など6項目を、1日の目安量と比べて確認できます。</p>
-        </div>
-        <div class="about__item">
-          <span class="about__icon" aria-hidden="true">🏠</span>
-          <h3>おうちでも作れる</h3>
-          <p>人数に合わせて分量を自動で計算。調理時間の目安も載せています。</p>
-        </div>
+    <!-- ================= 献立 ================= -->
+    <section class="view" id="view-plan" aria-labelledby="h-plan" hidden>
+      <div class="view__head">
+        <h1 class="view__title" id="h-plan">献立</h1>
+        <button type="button" class="btn btn--small btn--ghost" id="thisWeekBtn">今週</button>
       </div>
+
+      <div class="weeknav">
+        <button type="button" class="iconbtn" id="prevWeek" aria-label="前の週">‹</button>
+        <p class="weeknav__label" id="weekLabel" aria-live="polite"></p>
+        <button type="button" class="iconbtn" id="nextWeek" aria-label="次の週">›</button>
+      </div>
+
+      <div class="weeksum" id="weekSummary"></div>
+      <div class="days" id="days"></div>
     </section>
 
-    <!-- ===== 店舗情報 ===== -->
-    <section class="section shop" id="shop">
-      <div class="container">
-        <div class="section__head">
-          <p class="section__en">Shop</p>
-          <h2 class="section__title">店舗情報</h2>
+    <!-- ================= 設定 ================= -->
+    <section class="view" id="view-settings" aria-labelledby="h-settings" hidden>
+      <div class="view__head">
+        <h1 class="view__title" id="h-settings">設定</h1>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel__title">データの保存場所</h2>
+        <p class="panel__text">レシピ・写真・献立は、<b>このブラウザの中だけ</b>に保存されます。ほかの人には見えません。ブラウザのデータを消すと失われるので、ときどきバックアップを書き出してください。</p>
+        <p class="panel__text panel__text--sub" id="storageInfo"></p>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel__title">バックアップ・別の端末へ移す</h2>
+        <p class="panel__text">写真も含めて1つのファイルに書き出します。別の端末で「読み込む」と、同じ内容を使えます。</p>
+        <div class="panel__actions">
+          <button type="button" class="btn btn--small" id="exportBtn">⬇ 書き出す</button>
+          <label class="btn btn--small btn--ghost">
+            ⬆ 読み込む
+            <input type="file" id="importInput" accept="application/json,.json" class="visually-hidden">
+          </label>
         </div>
-        <div class="shop__card">
-          <dl class="shop__list">
-            <div><dt>住所</dt><dd>東京都世田谷区ひなた町4-5-6</dd></div>
-            <div><dt>営業時間</dt><dd>10:00〜18:00（L.O. 17:30）</dd></div>
-            <div><dt>定休日</dt><dd>月曜日・第3火曜日</dd></div>
-            <div><dt>電話</dt><dd><a href="tel:0300001111">03-0000-1111</a></dd></div>
-          </dl>
-          <a href="tel:0300001111" class="btn btn--sub">📞 電話でのご予約</a>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel__title">1日の目安量</h2>
+        <p class="panel__text">献立の合計や、レシピの栄養バーの基準になります。</p>
+        <form class="targets" id="targetsForm"></form>
+      </div>
+
+      <div class="panel">
+        <h2 class="panel__title">データの整理</h2>
+        <div class="panel__actions">
+          <button type="button" class="btn btn--small btn--ghost" id="addSamplesBtn">サンプルを追加</button>
+          <button type="button" class="btn btn--small btn--ghost" id="removeSamplesBtn">サンプルを削除</button>
+          <button type="button" class="btn btn--small btn--danger" id="clearAllBtn">すべて削除</button>
         </div>
       </div>
     </section>
   </main>
 
-  <footer class="footer">
-    <p class="footer__logo">🌼 Hinata Kitchen</p>
-    <p class="footer__note">※ 栄養成分は一般的な食品成分表をもとにした目安です。</p>
-    <p class="footer__copy">&copy; <span id="year">2026</span> Hinata Kitchen</p>
-  </footer>
+  <!-- ===== スマホ用タブバー ===== -->
+  <nav class="tabbar" aria-label="メイン">
+    <a href="#recipes" class="tabbar__link" data-nav="recipes"><span aria-hidden="true">📒</span>レシピ</a>
+    <a href="#plan" class="tabbar__link" data-nav="plan"><span aria-hidden="true">📅</span>献立</a>
+    <a href="#settings" class="tabbar__link" data-nav="settings"><span aria-hidden="true">⚙️</span>設定</a>
+  </nav>
 
-  <!-- ===== レシピ詳細モーダル ===== -->
-  <div class="modal" id="recipeModal" aria-hidden="true">
-    <div class="modal__overlay" data-close></div>
-    <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="rTitle">
-      <button type="button" class="modal__close" aria-label="閉じる" data-close>&times;</button>
-      <div class="modal__scroll">
-        <div class="r-hero" id="rHero">
-          <span class="r-hero__icon" id="rIcon" aria-hidden="true"></span>
-        </div>
-        <div class="r-body">
-          <p class="r-cat" id="rCat"></p>
-          <h2 class="r-title" id="rTitle"></h2>
-          <p class="r-desc" id="rDesc"></p>
-
-          <ul class="r-meta">
-            <li><span>価格</span><strong id="rPrice"></strong></li>
-            <li><span>調理時間</span><strong id="rTime"></strong></li>
-            <li><span>エネルギー</span><strong id="rKcal"></strong></li>
-          </ul>
-
-          <div class="r-time" id="rTimeBar" aria-label="調理時間の内訳"></div>
-
-          <div class="r-allergy" id="rAllergy"></div>
-
-          <!-- 分量 -->
-          <section class="r-section">
-            <div class="r-section__head">
-              <h3>材料と分量</h3>
-              <div class="servings" role="group" aria-label="人数">
-                <button type="button" class="servings__btn" id="servMinus" aria-label="1人減らす">−</button>
-                <output class="servings__num" id="servNum" aria-live="polite">1人分</output>
-                <button type="button" class="servings__btn" id="servPlus" aria-label="1人増やす">＋</button>
-              </div>
-            </div>
-            <table class="r-table">
-              <caption class="visually-hidden">材料</caption>
-              <tbody id="rIngredients"></tbody>
-            </table>
-            <h4 class="r-subhead">調味料</h4>
-            <table class="r-table r-table--season">
-              <caption class="visually-hidden">調味料</caption>
-              <tbody id="rSeasonings"></tbody>
-            </table>
-          </section>
-
-          <!-- 栄養 -->
-          <section class="r-section">
-            <div class="r-section__head">
-              <h3>栄養成分 <small>（1人分あたり）</small></h3>
-            </div>
-            <ul class="nutri" id="rNutrition"></ul>
-            <p class="r-note">バーは成人の1日の目安量に対する割合です。数値は目安です。</p>
-          </section>
-
-          <!-- 作り方 -->
-          <section class="r-section">
-            <div class="r-section__head"><h3>作り方</h3></div>
-            <ol class="steps" id="rSteps"></ol>
-          </section>
-        </div>
-      </div>
+  <!-- ================= レシピ詳細 ================= -->
+  <dialog class="sheet" id="detailDialog" aria-labelledby="dTitle">
+    <div class="sheet__bar">
+      <button type="button" class="iconbtn" data-close aria-label="閉じる">✕</button>
     </div>
-  </div>
+    <div class="d-photo" id="dPhoto"></div>
+    <div class="sheet__body">
+      <p class="d-cat" id="dCat"></p>
+      <h2 class="d-title" id="dTitle"></h2>
+      <p class="d-desc" id="dDesc"></p>
 
-  <script src="main.js"></script>
+      <div class="d-actions">
+        <button type="button" class="pill" id="dFav" aria-pressed="false">☆ お気に入り</button>
+        <button type="button" class="pill" id="dPlan">📅 献立に追加</button>
+        <button type="button" class="pill" id="dEdit">✏️ 編集</button>
+        <button type="button" class="pill" id="dCopy">⧉ 複製</button>
+        <button type="button" class="pill pill--danger" id="dDelete">🗑 削除</button>
+      </div>
+
+      <ul class="d-meta">
+        <li><span>調理時間</span><strong id="dTime"></strong></li>
+        <li><span>エネルギー</span><strong id="dKcal"></strong></li>
+        <li><span>塩分</span><strong id="dSalt"></strong></li>
+      </ul>
+      <div class="timebar" id="dTimeBar"></div>
+      <div class="d-allergy" id="dAllergy"></div>
+
+      <section class="block">
+        <div class="block__head">
+          <h3>材料と分量</h3>
+          <div class="stepper" role="group" aria-label="人数">
+            <button type="button" class="stepper__btn" id="servMinus" aria-label="1人減らす">−</button>
+            <output class="stepper__num" id="servNum" aria-live="polite"></output>
+            <button type="button" class="stepper__btn" id="servPlus" aria-label="1人増やす">＋</button>
+          </div>
+        </div>
+        <table class="amounts"><caption class="visually-hidden">材料</caption><tbody id="dIngredients"></tbody></table>
+        <h4 class="block__sub">調味料</h4>
+        <table class="amounts amounts--season"><caption class="visually-hidden">調味料</caption><tbody id="dSeasonings"></tbody></table>
+      </section>
+
+      <section class="block">
+        <div class="block__head"><h3>栄養成分 <small>（1人分あたり）</small></h3></div>
+        <ul class="nutri" id="dNutrition"></ul>
+        <p class="note">バーは「設定」の1日の目安量に対する割合です。</p>
+      </section>
+
+      <section class="block">
+        <div class="block__head"><h3>作り方</h3></div>
+        <ol class="steps" id="dSteps"></ol>
+      </section>
+
+      <section class="block" id="dMemoBlock">
+        <div class="block__head"><h3>メモ</h3></div>
+        <p class="memo" id="dMemo"></p>
+      </section>
+
+      <p class="note note--date" id="dDates"></p>
+    </div>
+  </dialog>
+
+  <!-- ================= レシピ編集 ================= -->
+  <dialog class="sheet sheet--form" id="editDialog" aria-labelledby="eTitle">
+    <form id="editForm" novalidate>
+      <div class="sheet__bar sheet__bar--form">
+        <button type="button" class="iconbtn" data-close aria-label="閉じる">✕</button>
+        <h2 class="sheet__title" id="eTitle">新しいレシピ</h2>
+        <button type="submit" class="btn btn--small">保存</button>
+      </div>
+      <div class="sheet__body">
+        <!-- 写真 -->
+        <div class="photo-input" id="photoDrop">
+          <div class="photo-input__preview" id="photoPreview"></div>
+          <div class="photo-input__btns">
+            <label class="btn btn--small btn--ghost">
+              📷 写真を選ぶ
+              <input type="file" id="photoInput" accept="image/*" class="visually-hidden">
+            </label>
+            <button type="button" class="btn btn--small btn--ghost" id="photoRemove" hidden>写真を外す</button>
+          </div>
+          <p class="note">PC では写真をここにドラッグしても登録できます。自動で縮小して保存します。</p>
+        </div>
+
+        <fieldset class="fs">
+          <legend>基本情報</legend>
+          <div class="field">
+            <label for="fName">料理名 <span class="req">必須</span></label>
+            <input type="text" id="fName" name="name" maxlength="60" required>
+            <p class="field__error" id="fName-error"></p>
+          </div>
+          <div class="grid2">
+            <div class="field">
+              <label for="fCat">カテゴリ</label>
+              <select id="fCat" name="cat">
+                <option value="main">ごはん</option>
+                <option value="side">サラダ・スープ</option>
+                <option value="sweets">スイーツ</option>
+                <option value="drink">ドリンク</option>
+                <option value="other">その他</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="fServings">分量は何人分？</label>
+              <div class="unit-input"><input type="number" id="fServings" name="servings" min="1" max="20" step="1" inputmode="numeric" required><span>人分</span></div>
+            </div>
+          </div>
+          <div class="field">
+            <label for="fDesc">ひとこと説明</label>
+            <textarea id="fDesc" name="desc" rows="2" maxlength="200"></textarea>
+          </div>
+          <div class="checks">
+            <label class="check"><input type="checkbox" id="fFav" name="favorite"> ★ お気に入り</label>
+            <label class="check"><input type="checkbox" id="fVeg" name="veg"> 🌱 ベジタリアン</label>
+          </div>
+        </fieldset>
+
+        <fieldset class="fs">
+          <legend>調理時間</legend>
+          <div class="grid3">
+            <div class="field"><label for="fPrep">下ごしらえ</label><div class="unit-input"><input type="number" id="fPrep" name="prep" min="0" max="1440" inputmode="numeric"><span>分</span></div></div>
+            <div class="field"><label for="fCook">調理</label><div class="unit-input"><input type="number" id="fCook" name="cook" min="0" max="1440" inputmode="numeric"><span>分</span></div></div>
+            <div class="field"><label for="fRest">待ち時間</label><div class="unit-input"><input type="number" id="fRest" name="rest" min="0" max="10080" inputmode="numeric"><span>分</span></div></div>
+          </div>
+          <p class="note">待ち時間は、冷やす・漬け込むなど手を動かさない時間です。</p>
+        </fieldset>
+
+        <fieldset class="fs">
+          <legend>材料</legend>
+          <div class="rows" id="ingRows"></div>
+          <button type="button" class="addrow" data-add="ing">＋ 材料を追加</button>
+        </fieldset>
+
+        <fieldset class="fs">
+          <legend>調味料</legend>
+          <div class="rows" id="seaRows"></div>
+          <button type="button" class="addrow" data-add="sea">＋ 調味料を追加</button>
+          <p class="note">「少々」「適量」のときは分量を空欄にして、単位にその言葉を入れてください。</p>
+        </fieldset>
+
+        <fieldset class="fs">
+          <legend>栄養成分（1人分あたり）</legend>
+          <div class="grid3" id="nutriFields"></div>
+        </fieldset>
+
+        <fieldset class="fs">
+          <legend>アレルギー</legend>
+          <div class="checks" id="allergyChecks"></div>
+        </fieldset>
+
+        <fieldset class="fs">
+          <legend>作り方</legend>
+          <div class="rows" id="stepRows"></div>
+          <button type="button" class="addrow" data-add="step">＋ 手順を追加</button>
+        </fieldset>
+
+        <fieldset class="fs">
+          <legend>メモ</legend>
+          <textarea id="fMemo" name="memo" rows="3" maxlength="1000" placeholder="コツ、アレンジ、家族の感想など"></textarea>
+        </fieldset>
+
+        <button type="submit" class="btn btn--block">保存する</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ================= 献立に追加（レシピ選択） ================= -->
+  <dialog class="sheet sheet--small" id="pickDialog" aria-labelledby="pTitle">
+    <div class="sheet__bar sheet__bar--form">
+      <button type="button" class="iconbtn" data-close aria-label="閉じる">✕</button>
+      <h2 class="sheet__title" id="pTitle">レシピを選ぶ</h2>
+      <span></span>
+    </div>
+    <div class="sheet__body">
+      <div class="search search--in">
+        <span class="search__icon" aria-hidden="true">🔍</span>
+        <input type="search" id="pickSearch" placeholder="レシピを検索" aria-label="レシピを検索" autocomplete="off">
+      </div>
+      <ul class="picklist" id="pickList"></ul>
+    </div>
+  </dialog>
+
+  <!-- ================= 献立に追加（日付と時間帯） ================= -->
+  <dialog class="sheet sheet--small" id="slotDialog" aria-labelledby="sTitle">
+    <form method="dialog" id="slotForm">
+      <div class="sheet__bar sheet__bar--form">
+        <button type="button" class="iconbtn" data-close aria-label="閉じる">✕</button>
+        <h2 class="sheet__title" id="sTitle">献立に追加</h2>
+        <span></span>
+      </div>
+      <div class="sheet__body">
+        <p class="slot-recipe" id="slotRecipe"></p>
+        <div class="field">
+          <label for="slotDate">日付</label>
+          <input type="date" id="slotDate" required>
+        </div>
+        <div class="field">
+          <span class="field__label">時間帯</span>
+          <div class="seg" id="slotSeg"></div>
+        </div>
+        <button type="submit" class="btn btn--block" value="ok">追加する</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- ================= 確認 ================= -->
+  <dialog class="confirm" id="confirmDialog" aria-labelledby="cMsg">
+    <form method="dialog">
+      <p class="confirm__msg" id="cMsg"></p>
+      <div class="confirm__btns">
+        <button type="submit" value="cancel" class="btn btn--small btn--ghost">キャンセル</button>
+        <button type="submit" value="ok" class="btn btn--small" id="cOk">OK</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="samples.js"></script>
+  <script src="app.js"></script>
 </body>
 </html>
