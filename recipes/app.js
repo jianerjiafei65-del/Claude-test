@@ -1,5 +1,5 @@
 /* =========================================================
-   ひなたレシピ帳 - app.js
+   今日のごはん - app.js
    データはすべてこのブラウザの IndexedDB に保存します。
    ========================================================= */
 (() => {
@@ -942,7 +942,7 @@
       const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `hinata-recipes-${ymd(new Date())}.json`;
+      a.download = `kyou-no-gohan-${ymd(new Date())}.json`;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
       toast('書き出しました');
@@ -956,7 +956,7 @@
     if (!file) return;
     let data;
     try { data = JSON.parse(await file.text()); } catch (_) { toast('ファイルを読み込めませんでした'); return; }
-    if (!data || data.app !== 'hinata-recipe-note' || !Array.isArray(data.recipes)) { toast('ひなたレシピ帳のファイルではありません'); return; }
+    if (!data || data.app !== 'hinata-recipe-note' || !Array.isArray(data.recipes)) { toast('「今日のごはん」のバックアップファイルではありません'); return; }
     const ok = await ask(`${data.recipes.length} 件のレシピを読み込みます。\n今のデータはすべて置き換わります。よろしいですか？`, { ok: '置き換える', danger: true });
     if (!ok) return;
     try {
