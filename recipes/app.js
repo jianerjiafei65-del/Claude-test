@@ -6,9 +6,12 @@
   'use strict';
 
   /* ---------- 定数 ---------- */
-  const CAT_LABEL = { main: 'ごはん', side: 'サラダ・スープ', sweets: 'スイーツ', drink: 'ドリンク', other: 'その他' };
-  const CAT_COLOR = { main: '#fde7cf', side: '#e1efd9', sweets: '#fdeec0', drink: '#eee3d3', other: '#e9e4f2' };
-  const SLOTS = [['breakfast', '朝'], ['lunch', '昼'], ['dinner', '夜'], ['snack', '間食']];
+  const CAT_LABEL = { staple: '主食', main: '主菜', side: '副菜', soup: '汁物', sweets: 'スイーツ', drink: 'ドリンク', other: 'その他' };
+  const CAT_COLOR = { staple: '#fde7cf', main: '#fbdcd5', side: '#e1efd9', soup: '#fdeec0', sweets: '#f8e1ec', drink: '#eee3d3', other: '#e9e4f2' };
+  // 献立の枠：[キー, 表示名, 入れられるカテゴリ]
+  const SLOTS = [['main', '主菜・主食', ['main', 'staple']], ['side', '副菜', ['side']], ['soup', '汁物', ['soup']]];
+  const slotOf = (cat) => (SLOTS.find((s) => s[2].includes(cat)) || SLOTS[0])[0];
+  const SCHEMA = 2; // 2: カテゴリを主食・主菜・副菜・汁物に変更し、献立を3品の枠にした版
   const ALLERGENS = ['卵', '乳', '小麦', 'えび', 'かに', 'そば', '落花生', 'くるみ', '大豆', 'ごま'];
   const NUTRI = [
     { key: 'kcal', label: 'エネルギー', unit: 'kcal', def: 2000, step: 1 },
@@ -35,7 +38,6 @@
   const ymd = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const parseYmd = (s) => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d); };
   const addDays = (d, n) => { const x = new Date(d); x.setDate(x.getDate() + n); return x; };
-  const mondayOf = (d) => { const x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return addDays(x, -((x.getDay() + 6) % 7)); };
   const fmtDate = (ts) => { const d = new Date(ts); return `${d.getFullYear()}/${d.getMonth() + 1}/${d.getDate()}`; };
 
   const FRACTIONS = { 0.25: '¼', 0.5: '½', 0.75: '¾' };
@@ -98,13 +100,53 @@
   /* ---------- 状態 ---------- */
   const state = {
     recipes: [],
-    plan: {},          // { 'YYYY-MM-DD': { breakfast: [id], lunch: [], dinner: [], snack: [] } }
+    plan: {},          // { 'YYYY-MM-DD': { main: id, side: id, soup: id } }
     targets: Object.fromEntries(NUTRI.map((n) => [n.key, n.def])),
     photoURL: new Map(), // id -> objectURL
     filter: { q: '', cat: 'all', opts: new Set(), sort: 'updated' },
-    week: mondayOf(new Date())
+    month: null,       // 献立カレンダーで表示中の月 { y, m }
+    weekIdx: 0         // その月の何週目か（0始まり）
   };
   const byId = (id) => state.recipes.find((r) => r.id === id);
+
+  /* ---------- 旧データ（版1）からの移行 ---------- */
+  const SAMPLE_CAT_V2 = {
+    'sample-taco-rice': 'staple', 'sample-veg-curry': 'staple', 'sample-avocado-toast': 'staple',
+    'sample-salmon': 'main', 'sample-cobb-salad': 'side', 'sample-pumpkin-soup': 'soup', 'sample-minestrone': 'soup'
+  };
+  const SOUP_RE = /スープ|汁|ポタージュ|ミネストローネ|シチュー|chowder|soup/i;
+  const migrateRecipeV1 = (r) => ({
+    ...r,
+    cat: SAMPLE_CAT_V2[r.id] || (r.cat === 'side' ? (SOUP_RE.test(r.name || '') ? 'soup' : 'side') : r.cat)
+  });
+  // 旧：{ breakfast:[id], lunch:[id], dinner:[id], snack:[id] } → 新：{ main, side, soup }（入りきらない分は外す）
+  const migratePlanV1 = (plan, recipes) => {
+    const find = (id) => recipes.find((r) => r.id === id);
+    const out = {};
+    for (const [key, day] of Object.entries(plan || {})) {
+      if (!day || typeof day !== 'object') continue;
+      const d = {};
+      for (const id of ['breakfast', 'lunch', 'dinner', 'snack'].flatMap((s) => (Array.isArray(day[s]) ? day[s] : []))) {
+        const r = find(id);
+        if (!r) continue;
+        const slot = SLOTS.find((s) => s[2].includes(r.cat));
+        if (slot && !d[slot[0]]) d[slot[0]] = id;
+      }
+      if (Object.keys(d).length) out[key] = d;
+    }
+    return out;
+  };
+  // 献立データを検証して、存在するレシピだけを残す
+  const normPlan = (plan, ids) => {
+    const out = {};
+    for (const [key, day] of Object.entries(plan || {})) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(key) || !day || typeof day !== 'object') continue;
+      const d = {};
+      for (const [s] of SLOTS) if (typeof day[s] === 'string' && ids.has(day[s])) d[s] = day[s];
+      if (Object.keys(d).length) out[key] = d;
+    }
+    return out;
+  };
 
   const saveRecipes = () => Store.set('kv', 'recipes', state.recipes).catch(onSaveError);
   const savePlan = () => Store.set('kv', 'plan', state.plan).catch(onSaveError);
@@ -270,6 +312,7 @@
       <button type="button" class="card" data-id="${esc(r.id)}" style="animation-delay:${Math.min(i, 12) * 30}ms">
         <div class="card__photo">
           ${photoHTML(r, { hint: true })}
+          <span class="card__role">${CAT_LABEL[r.cat]}</span>
           ${r.favorite ? '<span class="card__fav" aria-label="お気に入り">★</span>' : ''}
         </div>
         <div class="card__body">
@@ -406,7 +449,10 @@
   async function deleteRecipes(ids) {
     const set = new Set(ids);
     state.recipes = state.recipes.filter((r) => !set.has(r.id));
-    for (const day of Object.values(state.plan)) for (const k of Object.keys(day)) day[k] = day[k].filter((id) => !set.has(id));
+    for (const [key, day] of Object.entries(state.plan)) {
+      for (const k of Object.keys(day)) if (set.has(day[k])) delete day[k];
+      if (!Object.keys(day).length) delete state.plan[key];
+    }
     for (const id of ids) await removePhoto(id).catch(() => {});
     await Promise.all([saveRecipes(), savePlan()]);
     renderList();
@@ -603,14 +649,33 @@
   });
 
   /* =========================================================
-     献立
+     献立カレンダー
      ========================================================= */
+  // 月の各週（日曜始まり）の開始日
+  const weeksOfMonth = ({ y, m }) => {
+    const first = new Date(y, m, 1), last = new Date(y, m + 1, 0);
+    const weeks = [];
+    for (let s = addDays(first, -first.getDay()); s <= last; s = addDays(s, 7)) weeks.push(s);
+    return weeks;
+  };
+  // 表示中の週の、その月に含まれる日
+  const visibleDays = () => {
+    const { y, m } = state.month;
+    const start = weeksOfMonth(state.month)[state.weekIdx];
+    return Array.from({ length: 7 }, (_, i) => addDays(start, i)).filter((d) => d.getFullYear() === y && d.getMonth() === m);
+  };
+  const goToDate = (d) => {
+    state.month = { y: d.getFullYear(), m: d.getMonth() };
+    state.weekIdx = Math.max(0, weeksOfMonth(state.month).findIndex((s) => d >= s && d < addDays(s, 7)));
+  };
+  goToDate(new Date());
+
   const dayTotals = (key) => {
-    const day = state.plan[key];
+    const day = state.plan[key] || {};
     const t = Object.fromEntries(NUTRI.map((n) => [n.key, 0]));
     let count = 0;
-    if (day) for (const [s] of SLOTS) for (const id of day[s] || []) {
-      const r = byId(id);
+    for (const [s] of SLOTS) {
+      const r = byId(day[s]);
       if (!r) continue;
       count++;
       NUTRI.forEach((n) => { t[n.key] += r.nutrition[n.key]; });
@@ -618,126 +683,206 @@
     return { t, count };
   };
 
-  const minibar = (label, v, unit, target) => {
-    const pct = target ? (v / target) * 100 : 0;
-    return `<div class="minibar"><span>${label}</span><b>${round1(v)}</b>${unit}
-      <div class="minibar__track" title="目安の${Math.round(pct)}%"><i class="${pct > 100 ? 'is-over' : ''}" style="width:${Math.min(pct, 100)}%"></i></div></div>`;
+  const dishHTML = (key, slot, label, r) => {
+    const cls = `dish dish--${slot}`;
+    if (!r) {
+      return `<button type="button" class="${cls} dish--empty" data-swap="${key}|${slot}" aria-label="${label}を選ぶ">
+        <span class="plus" aria-hidden="true">＋</span><span class="dish__role">${label}</span></button>`;
+    }
+    const restNote = r.time.rest ? `（＋待ち${fmtMin(r.time.rest)}）` : '';
+    return `<div class="${cls}">
+      <button type="button" class="dish__photo" data-open="${esc(r.id)}" aria-label="${esc(r.name)} の詳細">
+        ${photoHTML(r)}<span class="dish__role">${CAT_LABEL[r.cat] || label}</span>
+      </button>
+      <p class="dish__name">${esc(r.name)}</p>
+      <p class="dish__meta"><span>⏱ ${fmtMin(activeTime(r))}${restNote}</span><span>🔥 ${r.nutrition.kcal}kcal</span></p>
+      <div class="dish__tools">
+        <button type="button" data-swap="${key}|${slot}">入れ替え</button>
+        <button type="button" class="del" data-clear="${key}|${slot}" aria-label="${esc(r.name)} を外す">✕</button>
+      </div>
+    </div>`;
   };
 
   function renderPlan() {
-    const start = state.week, end = addDays(start, 6);
-    $('#weekLabel').textContent = `${start.getMonth() + 1}/${start.getDate()}（月）〜 ${end.getMonth() + 1}/${end.getDate()}（日）`;
-    const todayKey = ymd(new Date());
-    let html = '', sumKcal = 0, sumSalt = 0, days = 0, dishes = 0;
+    const { y, m } = state.month;
+    const weeks = weeksOfMonth(state.month);
+    if (state.weekIdx >= weeks.length) state.weekIdx = weeks.length - 1;
+    const prev = new Date(y, m - 1, 1), next = new Date(y, m + 1, 1);
+    $('#monthLabel').textContent = `${y}年 ${m + 1}月`;
+    $('#prevMonthLabel').textContent = `${prev.getFullYear()}年 ${prev.getMonth() + 1}月`;
+    $('#nextMonthLabel').textContent = `${next.getFullYear()}年 ${next.getMonth() + 1}月`;
 
-    for (let i = 0; i < 7; i++) {
-      const d = addDays(start, i), key = ymd(d), plan = state.plan[key] || {};
+    $('#weekTabs').innerHTML = weeks.map((s, i) => {
+      const days = Array.from({ length: 7 }, (_, j) => addDays(s, j)).filter((d) => d.getMonth() === m);
+      const a = days[0], b = days[days.length - 1];
+      return `<button type="button" class="weektab${i === state.weekIdx ? ' is-current' : ''}" data-week="${i}" aria-pressed="${i === state.weekIdx}">
+        ${i + 1}週目<small>${m + 1}/${a.getDate()}〜${m + 1}/${b.getDate()}</small></button>`;
+    }).join('');
+
+    const days = visibleDays();
+    const todayKey = ymd(new Date());
+    let html = '', sumKcal = 0, sumSalt = 0, filledDays = 0, dishes = 0;
+    for (const d of days) {
+      const key = ymd(d), day = state.plan[key] || {}, dow = d.getDay();
       const { t, count } = dayTotals(key);
-      if (count) { days++; sumKcal += t.kcal; sumSalt += t.salt; dishes += count; }
-      const dow = d.getDay();
-      html += `<article class="day${key === todayKey ? ' is-today' : ''}" aria-label="${d.getMonth() + 1}月${d.getDate()}日">
-        <div class="day__head">
-          <h2 class="day__date ${dow === 0 ? 'sun' : dow === 6 ? 'sat' : ''}">${d.getMonth() + 1}/${d.getDate()}<small>（${WEEKDAYS[dow]}）</small>${key === todayKey ? '<span class="today">今日</span>' : ''}</h2>
-          <p class="day__kcal">${count ? Math.round(t.kcal) + '<small> kcal</small>' : '<small>未登録</small>'}</p>
+      if (count) { filledDays++; sumKcal += t.kcal; sumSalt += t.salt; dishes += count; }
+      html += `<article class="dayrow${key === todayKey ? ' is-today' : ''}${dow === 0 ? ' sun' : dow === 6 ? ' sat' : ''}" aria-label="${m + 1}月${d.getDate()}日（${WEEKDAYS[dow]}）">
+        <h3 class="dayrow__date"><span class="dayrow__md">${m + 1}/${d.getDate()}</span><span class="dayrow__dow">（${WEEKDAYS[dow]}）</span>${key === todayKey ? '<span class="today">今日</span>' : ''}</h3>
+        <div class="dayrow__dishes">${SLOTS.map(([s, label]) => dishHTML(key, s, label, byId(day[s]))).join('')}</div>
+        <div class="dayrow__foot">
+          <span>${count ? `合計 <b>${Math.round(t.kcal)}</b>kcal ・ 塩分 <b>${round1(t.salt)}</b>g ・ 手を動かす時間 約<b>${SLOTS.reduce((a, [s]) => a + (byId(day[s]) ? activeTime(byId(day[s])) : 0), 0)}</b>分` : 'まだ決まっていません'}</span>
+          <button type="button" class="reroll" data-reroll="${key}">🔀 この日を提案</button>
         </div>
-        ${SLOTS.map(([s, label]) => `
-          <div class="slot">
-            <span class="slot__label">${label}</span>
-            <div class="slot__items">
-              ${(plan[s] || []).map((id, idx) => { const r = byId(id); return r ? `
-                <span class="plan-item">
-                  <button type="button" class="plan-item__open" data-open="${esc(id)}">
-                    <span class="plan-item__thumb">${photoHTML(r)}</span>
-                    <span class="plan-item__name">${esc(r.name)}</span>
-                  </button>
-                  <button type="button" class="plan-item__del" data-del="${key}|${s}|${idx}" aria-label="${esc(r.name)} を外す">✕</button>
-                </span>` : ''; }).join('')}
-              <button type="button" class="slot__add" data-add-slot="${key}|${s}" aria-label="${d.getMonth() + 1}/${d.getDate()} ${label}に追加">＋</button>
-            </div>
-          </div>`).join('')}
-        ${count ? `<div class="day__bars">
-          ${minibar('エネルギー', t.kcal, 'kcal', state.targets.kcal)}
-          ${minibar('たんぱく質', t.protein, 'g', state.targets.protein)}
-          ${minibar('塩分', t.salt, 'g', state.targets.salt)}
-        </div>` : ''}
       </article>`;
     }
     $('#days').innerHTML = html;
     $('#weekSummary').innerHTML = `
-      <div class="weeksum__item"><span>登録した品数</span><strong>${dishes}</strong></div>
-      <div class="weeksum__item"><span>1日平均 kcal</span><strong>${days ? Math.round(sumKcal / days) : '—'}</strong></div>
-      <div class="weeksum__item"><span>1日平均 塩分</span><strong>${days ? round1(sumSalt / days) + 'g' : '—'}</strong></div>`;
+      <div class="weeksum__item"><span>決まった品数</span><strong>${dishes}<small style="font-size:12px"> / ${days.length * SLOTS.length}</small></strong></div>
+      <div class="weeksum__item"><span>1日平均 kcal</span><strong>${filledDays ? Math.round(sumKcal / filledDays) : '—'}</strong></div>
+      <div class="weeksum__item"><span>1日平均 塩分</span><strong>${filledDays ? round1(sumSalt / filledDays) + 'g' : '—'}</strong></div>`;
+    const a = days[0], b = days[days.length - 1];
+    $('#printRange').textContent = `${y}年${m + 1}月${a.getDate()}日（${WEEKDAYS[a.getDay()]}）〜${m + 1}月${b.getDate()}日（${WEEKDAYS[b.getDay()]}）`;
   }
 
-  $('#prevWeek').addEventListener('click', () => { state.week = addDays(state.week, -7); renderPlan(); });
-  $('#nextWeek').addEventListener('click', () => { state.week = addDays(state.week, 7); renderPlan(); });
-  $('#thisWeekBtn').addEventListener('click', () => { state.week = mondayOf(new Date()); renderPlan(); });
+  $('#prevMonth').addEventListener('click', () => { const { y, m } = state.month; state.month = { y: m ? y : y - 1, m: (m + 11) % 12 }; state.weekIdx = 0; renderPlan(); });
+  $('#nextMonth').addEventListener('click', () => { const { y, m } = state.month; state.month = { y: m === 11 ? y + 1 : y, m: (m + 1) % 12 }; state.weekIdx = 0; renderPlan(); });
+  $('#weekTabs').addEventListener('click', (e) => { const b = e.target.closest('[data-week]'); if (b) { state.weekIdx = Number(b.dataset.week); renderPlan(); } });
+  $('#thisWeekBtn').addEventListener('click', () => { goToDate(new Date()); renderPlan(); });
+  $('#printBtn').addEventListener('click', () => window.print());
 
-  const addToPlan = async (key, slot, id) => {
+  const setSlot = async (key, slot, id) => {
     const day = state.plan[key] || (state.plan[key] = {});
-    (day[slot] || (day[slot] = [])).push(id);
+    if (id) day[slot] = id; else delete day[slot];
+    if (!Object.keys(day).length) delete state.plan[key];
     await savePlan();
   };
 
+  /* ---------- 提案（登録したレシピからランダムに選ぶ） ---------- */
+  const candidates = (slot) => state.recipes.filter((r) => SLOTS.find((s) => s[0] === slot)[2].includes(r.cat));
+  // お気に入りは2倍選ばれやすくする。avoid はなるべく避け、mustAvoid は候補がほかにある限り必ず避ける
+  const pickOne = (list, avoid, mustAvoid = new Set()) => {
+    let pool = list.filter((r) => !avoid.has(r.id) && !mustAvoid.has(r.id));
+    if (!pool.length) pool = list.filter((r) => !mustAvoid.has(r.id));
+    if (!pool.length) pool = list;
+    if (!pool.length) return null;
+    const weights = pool.map((r) => (r.favorite ? 2 : 1));
+    let x = Math.random() * weights.reduce((a, b) => a + b, 0);
+    for (let i = 0; i < pool.length; i++) { x -= weights[i]; if (x < 0) return pool[i]; }
+    return pool[pool.length - 1];
+  };
+  const usedInWeek = (exceptKey) => new Set(visibleDays().filter((d) => ymd(d) !== exceptKey).flatMap((d) => Object.values(state.plan[ymd(d)] || {})));
+  const noCandidates = () => SLOTS.every(([s]) => !candidates(s).length);
+
+  $('#suggestBtn').addEventListener('click', async () => {
+    if (noCandidates()) { toast('提案できるレシピがありません。主菜・副菜・汁物のレシピを登録してください'); return; }
+    const used = usedInWeek(null);
+    let filled = 0;
+    for (const d of visibleDays()) {
+      const key = ymd(d);
+      for (const [s] of SLOTS) {
+        if (byId(state.plan[key]?.[s])) continue;
+        const r = pickOne(candidates(s), used);
+        if (!r) continue;
+        (state.plan[key] || (state.plan[key] = {}))[s] = r.id;
+        used.add(r.id);
+        filled++;
+      }
+    }
+    await savePlan();
+    renderPlan();
+    toast(filled ? `${filled} 品を提案しました` : 'この週はすべて決まっています');
+  });
+
+  $('#clearWeekBtn').addEventListener('click', async () => {
+    const keys = visibleDays().map(ymd).filter((k) => state.plan[k]);
+    if (!keys.length) { toast('この週の献立はまだありません'); return; }
+    if (!(await ask('この週の献立をすべて外しますか？\n（レシピは消えません）', { ok: 'クリアする', danger: true }))) return;
+    keys.forEach((k) => delete state.plan[k]);
+    await savePlan();
+    renderPlan();
+    toast('この週をクリアしました');
+  });
+
   $('#days').addEventListener('click', async (e) => {
     const open = e.target.closest('[data-open]');
-    const del = e.target.closest('[data-del]');
-    const add = e.target.closest('[data-add-slot]');
+    const clear = e.target.closest('[data-clear]');
+    const swap = e.target.closest('[data-swap]');
+    const reroll = e.target.closest('[data-reroll]');
     if (open) openDetail(open.dataset.open);
-    if (del) {
-      const [key, slot, idx] = del.dataset.del.split('|');
-      state.plan[key][slot].splice(Number(idx), 1);
-      await savePlan();
+    if (clear) {
+      const [key, slot] = clear.dataset.clear.split('|');
+      await setSlot(key, slot, null);
       renderPlan();
     }
-    if (add) {
-      const [key, slot] = add.dataset.addSlot.split('|');
+    if (swap) {
+      const [key, slot] = swap.dataset.swap.split('|');
       openPicker(key, slot);
+    }
+    if (reroll) {
+      if (noCandidates()) { toast('提案できるレシピがありません'); return; }
+      const key = reroll.dataset.reroll;
+      const before = { ...(state.plan[key] || {}) };
+      const used = usedInWeek(key);
+      const current = new Set(Object.values(before)); // 今の料理とは違うものを選ぶ
+      const day = {};
+      for (const [s] of SLOTS) { const r = pickOne(candidates(s), used, current); if (r) { day[s] = r.id; used.add(r.id); } }
+      state.plan[key] = day;
+      await savePlan();
+      renderPlan();
+      toast('この日の献立を提案しました');
     }
   });
 
-  // レシピを選ぶ
+  /* ---------- レシピを選ぶ ---------- */
   const pickDlg = $('#pickDialog');
   let pickCtx = null;
   const renderPickList = () => {
     const q = $('#pickSearch').value.trim().toLowerCase();
-    const list = state.recipes.filter((r) => !q || r.name.toLowerCase().includes(q)).sort((a, b) => (b.favorite - a.favorite) || a.name.localeCompare(b.name, 'ja'));
+    const cats = SLOTS.find((s) => s[0] === pickCtx.slot)[2];
+    const all = $('#pickAll').checked;
+    const list = state.recipes
+      .filter((r) => (all || cats.includes(r.cat)) && (!q || r.name.toLowerCase().includes(q)))
+      .sort((a, b) => (cats.includes(b.cat) - cats.includes(a.cat)) || (b.favorite - a.favorite) || a.name.localeCompare(b.name, 'ja'));
+    const current = state.plan[pickCtx.key]?.[pickCtx.slot];
     $('#pickList').innerHTML = list.length ? list.map((r) => `
-      <li><button type="button" data-pick="${esc(r.id)}">
+      <li><button type="button" data-pick="${esc(r.id)}"${r.id === current ? ' aria-current="true"' : ''}>
         <span class="picklist__thumb">${photoHTML(r)}</span>
-        <span><span class="picklist__name">${r.favorite ? '★ ' : ''}${esc(r.name)}</span>
+        <span><span class="picklist__name">${r.favorite ? '★ ' : ''}${esc(r.name)}${r.id === current ? '（いまの料理）' : ''}</span>
         <span class="picklist__meta">${CAT_LABEL[r.cat]} ・ ${r.nutrition.kcal}kcal ・ ${fmtMin(activeTime(r))}</span></span>
-      </button></li>`).join('') : '<li class="empty">レシピが見つかりません</li>';
+      </button></li>`).join('')
+      : `<li class="empty">${all || q ? 'レシピが見つかりません' : `「${esc(SLOTS.find((s) => s[0] === pickCtx.slot)[1])}」のレシピがありません。<br>「ほかのカテゴリも表示」で選ぶか、レシピを登録してください。`}</li>`;
   };
   function openPicker(key, slot) {
     pickCtx = { key, slot };
     const d = parseYmd(key);
-    $('#pTitle').textContent = `${d.getMonth() + 1}/${d.getDate()}（${WEEKDAYS[d.getDay()]}）${SLOTS.find((s) => s[0] === slot)[1]}`;
+    $('#pTitle').textContent = `${d.getMonth() + 1}/${d.getDate()}（${WEEKDAYS[d.getDay()]}）の${SLOTS.find((s) => s[0] === slot)[1]}`;
     $('#pickSearch').value = '';
+    $('#pickAll').checked = false;
     renderPickList();
     pickDlg.showModal();
   }
   $('#pickSearch').addEventListener('input', renderPickList);
+  $('#pickAll').addEventListener('change', renderPickList);
   $('#pickList').addEventListener('click', async (e) => {
     const b = e.target.closest('[data-pick]');
     if (!b) return;
-    await addToPlan(pickCtx.key, pickCtx.slot, b.dataset.pick);
+    await setSlot(pickCtx.key, pickCtx.slot, b.dataset.pick);
     pickDlg.close();
     renderPlan();
-    toast('献立に追加しました');
+    toast('献立に入れました');
   });
 
-  // 詳細画面から「献立に追加」
+  /* ---------- 詳細画面から「献立に追加」 ---------- */
   const slotDlg = $('#slotDialog');
   let slotRecipeId = null;
-  $('#slotSeg').innerHTML = SLOTS.map(([k, l], i) => `<label><input type="radio" name="slot" value="${k}"${i === 2 ? ' checked' : ''}>${l}</label>`).join('');
+  $('#slotSeg').innerHTML = SLOTS.map(([k, l]) => `<label><input type="radio" name="slot" value="${k}">${l}</label>`).join('');
   function openSlotDialog(id) {
     slotRecipeId = id;
-    $('#slotRecipe').textContent = byId(id).name;
+    const r = byId(id);
+    $('#slotRecipe').textContent = r.name;
     $('#slotDate').value = ymd(new Date());
-    const h = new Date().getHours();
-    const def = h < 10 ? 'breakfast' : h < 15 ? 'lunch' : 'dinner';
-    $$('input[name=slot]', slotDlg).forEach((r) => { r.checked = r.value === def; });
+    const def = slotOf(r.cat);
+    $$('input[name=slot]', slotDlg).forEach((x) => { x.checked = x.value === def; });
     slotDlg.showModal();
   }
   $('#slotForm').addEventListener('submit', async (e) => {
@@ -745,11 +890,13 @@
     const date = $('#slotDate').value;
     if (!date) { $('#slotDate').focus(); return; }
     const slot = $('input[name=slot]:checked', slotDlg).value;
-    await addToPlan(date, slot, slotRecipeId);
+    const replaced = byId(state.plan[date]?.[slot]);
+    await setSlot(date, slot, slotRecipeId);
     slotDlg.close();
     const d = parseYmd(date);
-    toast(`${d.getMonth() + 1}/${d.getDate()} の${SLOTS.find((s) => s[0] === slot)[1]}に追加しました`);
-    state.week = mondayOf(d);
+    const label = SLOTS.find((s) => s[0] === slot)[1];
+    toast(replaced && replaced.id !== slotRecipeId ? `${d.getMonth() + 1}/${d.getDate()} の${label}を入れ替えました` : `${d.getMonth() + 1}/${d.getDate()} の${label}に入れました`);
+    goToDate(d);
     if (!$('#view-plan').hidden) renderPlan();
   });
 
@@ -791,7 +938,7 @@
         const b = await Store.get('photos', id);
         if (b) photos[id] = await blobToDataURL(b);
       }
-      const data = { app: 'hinata-recipe-note', version: 1, exportedAt: new Date().toISOString(), recipes: state.recipes, plan: state.plan, targets: state.targets, photos };
+      const data = { app: 'hinata-recipe-note', version: SCHEMA, exportedAt: new Date().toISOString(), recipes: state.recipes, plan: state.plan, targets: state.targets, photos };
       const blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -813,7 +960,8 @@
     const ok = await ask(`${data.recipes.length} 件のレシピを読み込みます。\n今のデータはすべて置き換わります。よろしいですか？`, { ok: '置き換える', danger: true });
     if (!ok) return;
     try {
-      const recipes = data.recipes.map(normRecipe);
+      const old = !(data.version >= SCHEMA); // 古い版で書き出したファイルは移行してから読み込む
+      const recipes = data.recipes.map((r) => normRecipe(old ? migrateRecipeV1(r) : r));
       const ids = new Set(recipes.map((r) => r.id));
       await Store.clear('photos');
       state.photoURL.forEach((u) => URL.revokeObjectURL(u));
@@ -823,11 +971,7 @@
         if (b) await setPhoto(id, b);
       }
       state.recipes = recipes;
-      state.plan = {};
-      for (const [k, day] of Object.entries(data.plan || {})) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(k) || typeof day !== 'object') continue;
-        state.plan[k] = Object.fromEntries(SLOTS.map(([s]) => [s, (Array.isArray(day[s]) ? day[s] : []).filter((id) => ids.has(id))]));
-      }
+      state.plan = normPlan(old ? migratePlanV1(data.plan, recipes) : data.plan, ids);
       NUTRI.forEach((n) => { const v = num(data.targets?.[n.key], 0); state.targets[n.key] = v > 0 ? v : n.def; });
       await Promise.all([saveRecipes(), savePlan(), saveTargets()]);
       renderList(); renderSettings();
@@ -866,10 +1010,17 @@
      ========================================================= */
   (async () => {
     try {
-      const [recipes, plan, targets] = await Promise.all([Store.get('kv', 'recipes'), Store.get('kv', 'plan'), Store.get('kv', 'targets')]);
-      if (Array.isArray(recipes)) state.recipes = recipes.map(normRecipe);
-      else { state.recipes = samples(); await saveRecipes(); } // 初回だけサンプルを入れる
-      if (plan && typeof plan === 'object') state.plan = plan;
+      const [recipes, plan, targets, schema] = await Promise.all(['recipes', 'plan', 'targets', 'schema'].map((k) => Store.get('kv', k)));
+      if (Array.isArray(recipes)) {
+        const old = schema !== SCHEMA;
+        state.recipes = recipes.map((r) => normRecipe(old ? migrateRecipeV1(r) : r));
+        state.plan = normPlan(old ? migratePlanV1(plan, state.recipes) : plan, new Set(state.recipes.map((r) => r.id)));
+        if (old) await Promise.all([saveRecipes(), savePlan()]);
+      } else {
+        state.recipes = samples(); // 初回だけサンプルを入れる
+        await saveRecipes();
+      }
+      await Store.set('kv', 'schema', SCHEMA);
       if (targets && typeof targets === 'object') NUTRI.forEach((n) => { if (num(targets[n.key]) > 0) state.targets[n.key] = targets[n.key]; });
       for (const id of await Store.keys('photos')) {
         const b = await Store.get('photos', id);

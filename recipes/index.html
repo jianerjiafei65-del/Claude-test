@@ -44,8 +44,10 @@
 
       <div class="chips" role="group" aria-label="カテゴリ">
         <button type="button" class="chip is-active" data-cat="all" aria-pressed="true">すべて</button>
-        <button type="button" class="chip" data-cat="main" aria-pressed="false">ごはん</button>
-        <button type="button" class="chip" data-cat="side" aria-pressed="false">サラダ・スープ</button>
+        <button type="button" class="chip" data-cat="staple" aria-pressed="false">主食</button>
+        <button type="button" class="chip" data-cat="main" aria-pressed="false">主菜</button>
+        <button type="button" class="chip" data-cat="side" aria-pressed="false">副菜</button>
+        <button type="button" class="chip" data-cat="soup" aria-pressed="false">汁物</button>
         <button type="button" class="chip" data-cat="sweets" aria-pressed="false">スイーツ</button>
         <button type="button" class="chip" data-cat="drink" aria-pressed="false">ドリンク</button>
         <button type="button" class="chip" data-cat="other" aria-pressed="false">その他</button>
@@ -80,15 +82,24 @@
 
     <!-- ================= 献立 ================= -->
     <section class="view" id="view-plan" aria-labelledby="h-plan" hidden>
-      <div class="view__head">
-        <h1 class="view__title" id="h-plan">献立</h1>
-        <button type="button" class="btn btn--small btn--ghost" id="thisWeekBtn">今週</button>
+      <div class="plan-head">
+        <h1 class="plan-head__title" id="h-plan">献立カレンダー</h1>
+        <p class="plan-head__lead">主菜・副菜・汁物の3品で、1週間分の献立を組み立てます。<br>迷ったら「提案」で、登録したレシピから自動で選びます。</p>
+        <p class="print-only print-range" id="printRange"></p>
       </div>
 
-      <div class="weeknav">
-        <button type="button" class="iconbtn" id="prevWeek" aria-label="前の週">‹</button>
-        <p class="weeknav__label" id="weekLabel" aria-live="polite"></p>
-        <button type="button" class="iconbtn" id="nextWeek" aria-label="次の週">›</button>
+      <div class="monthnav">
+        <button type="button" class="monthnav__side" id="prevMonth"><span aria-hidden="true">‹</span> <span id="prevMonthLabel"></span></button>
+        <h2 class="monthnav__cur" id="monthLabel" aria-live="polite"></h2>
+        <button type="button" class="monthnav__side monthnav__side--next" id="nextMonth"><span id="nextMonthLabel"></span> <span aria-hidden="true">›</span></button>
+      </div>
+      <div class="weektabs" id="weekTabs" role="group" aria-label="週"></div>
+
+      <div class="plan-actions">
+        <button type="button" class="btn btn--small" id="suggestBtn">✨ 空いている日を提案で埋める</button>
+        <button type="button" class="btn btn--small btn--ghost" id="thisWeekBtn">今週</button>
+        <button type="button" class="btn btn--small btn--ghost" id="printBtn">🖨 印刷</button>
+        <button type="button" class="btn btn--small btn--danger" id="clearWeekBtn">この週をクリア</button>
       </div>
 
       <div class="weeksum" id="weekSummary"></div>
@@ -237,8 +248,10 @@
             <div class="field">
               <label for="fCat">カテゴリ</label>
               <select id="fCat" name="cat">
-                <option value="main">ごはん</option>
-                <option value="side">サラダ・スープ</option>
+                <option value="staple">主食（丼・麺・パンなど）</option>
+                <option value="main">主菜</option>
+                <option value="side">副菜</option>
+                <option value="soup">汁物</option>
                 <option value="sweets">スイーツ</option>
                 <option value="drink">ドリンク</option>
                 <option value="other">その他</option>
@@ -320,6 +333,7 @@
         <span class="search__icon" aria-hidden="true">🔍</span>
         <input type="search" id="pickSearch" placeholder="レシピを検索" aria-label="レシピを検索" autocomplete="off">
       </div>
+      <label class="check pick-all"><input type="checkbox" id="pickAll"> ほかのカテゴリも表示</label>
       <ul class="picklist" id="pickList"></ul>
     </div>
   </dialog>
@@ -339,8 +353,9 @@
           <input type="date" id="slotDate" required>
         </div>
         <div class="field">
-          <span class="field__label">時間帯</span>
+          <span class="field__label">入れる枠</span>
           <div class="seg" id="slotSeg"></div>
+          <p class="note">すでに入っている料理は入れ替わります。</p>
         </div>
         <button type="submit" class="btn btn--block" value="ok">追加する</button>
       </div>
